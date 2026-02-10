@@ -1,0 +1,20 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": ["./*"],
+      "@mobile/ui": ["../../packages/ui"],
+      "@mobile/api": ["../../packages/api"],
+      "@mobile/auth": ["../../packages/auth"],
+      "@mobile/socket": ["../../packages/socket"],
+      "@mobile/utils": ["../../packages/utils"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
+}

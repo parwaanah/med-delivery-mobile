@@ -1,0 +1,26 @@
+{
+  "name": "med-delivery-mobile",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "dependencies": {
+    "@expo-google-fonts/be-vietnam-pro": "^0.4.1",
+    "expo-font": "^14.0.11",
+    "expo-haptics": "^15.0.8",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-test-renderer": "19.1.0",
+    "sentry-expo": "^7.2.0"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-test-renderer": "19.1.0"
+  },
+  "scripts": {
+    "dev:customer": "cd apps/customer && npm run start",
+    "lint": "echo lint todo"
+  }
+}
