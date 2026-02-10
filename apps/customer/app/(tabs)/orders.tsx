@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Pressable, RefreshControl } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { Text, Card, PrimaryButton, colors, spacing, Screen, Skeleton } from "@mobile/ui";
+import { Text, Card, PrimaryButton, colors, spacing, Screen, Skeleton, layout } from "@mobile/ui";
 import { Api } from "@mobile/api";
 import { useAuthStore } from "@mobile/auth";
 import { useRouter } from "expo-router";
 import NetInfo from "@react-native-community/netinfo";
 import { NetworkStateCard } from "../../components/NetworkStateCard";
 import { formatPrice } from "@mobile/utils";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ACTIVE_STATUSES = new Set([
   "CREATED",
@@ -48,6 +49,7 @@ const SkeletonRow = () => (
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const token = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -132,7 +134,11 @@ export default function OrdersScreen() {
         data={loading ? (new Array(6).fill(null) as any[]) : rows}
         keyExtractor={(item: any, index) => (item ? `${item.type}-${item.type === "order" ? item.order?.id : item.title}` : `s-${index}`)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.md, paddingBottom: 120 }}
+        contentContainerStyle={{
+          paddingHorizontal: spacing.xl,
+          gap: spacing.md,
+          paddingBottom: Math.max(spacing.xl, insets.bottom) + layout.tabBarHeight + 24,
+        }}
         ListHeaderComponent={
           <View style={{ paddingTop: spacing.lg }}>
             <Text variant="titleLarge">Orders</Text>

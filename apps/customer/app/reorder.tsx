@@ -63,7 +63,7 @@ export default function ReorderScreen() {
       }
       Alert.alert("Added to cart", "Review your cart before checkout.", [
         { text: "Continue browsing", style: "cancel", onPress: () => router.back() },
-        { text: "Go to cart", onPress: () => router.push("/cart") },
+        { text: "Go to cart", onPress: () => router.push("/(tabs)/cart") },
       ]);
     } catch (e: any) {
       Alert.alert("Reorder failed", e?.message || "Unable to add items to cart.");

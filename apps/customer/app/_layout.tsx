@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Api, queryClient } from "@mobile/api";
-import { ThemeProvider, ToastProvider } from "@mobile/ui";
+import { ThemeProvider, ToastProvider, colors } from "@mobile/ui";
 import { useAuthStore } from "@mobile/auth";
 import { View, AppState } from "react-native";
 import { useFonts } from "expo-font";
@@ -19,11 +19,12 @@ import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import { isExpoGoClient } from "../lib/expoGo";
 import { initSentry } from "../sentry";
+import { Text, Pressable } from "react-native";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const { bootstrap, loading } = useAuthStore();
+  const { bootstrap, loading, bootstrapError } = useAuthStore();
   const accessToken = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
   const [fontsLoaded] = useFonts({
@@ -120,6 +121,49 @@ export default function RootLayout() {
                   }}
                 >
                   <AppSplash useBrandFont />
+                </View>
+              )}
+              {!loading && bootstrapError && (
+                <View
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    backgroundColor: "rgba(0,0,0,0.35)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 24,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: "100%",
+                      maxWidth: 420,
+                      backgroundColor: colors.surface,
+                      borderRadius: 16,
+                      padding: 16,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                    }}
+                  >
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: colors.ink }}>
+                      Poor connection
+                    </Text>
+                    <Text style={{ marginTop: 6, fontSize: 13, color: colors.inkMuted }}>
+                      {bootstrapError}. Check your network or API base URL, then retry.
+                    </Text>
+                    <Pressable
+                      onPress={() => bootstrap()}
+                      style={{
+                        marginTop: 12,
+                        backgroundColor: colors.primary,
+                        borderRadius: 12,
+                        paddingVertical: 10,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{ color: "white", fontWeight: "700" }}>Retry</Text>
+                    </Pressable>
+                  </View>
                 </View>
               )}
             </ToastProvider>

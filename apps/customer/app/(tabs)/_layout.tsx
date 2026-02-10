@@ -5,36 +5,41 @@ import { colors, layout } from "@mobile/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@mobile/api";
 import { useAuthStore } from "@mobile/auth";
+import * as SecureStore from "expo-secure-store";
+import { AppState } from "react-native";
 
 function TabIcon({ name, color }: { name: any; color: string }) {
   return <Ionicons name={name} size={24} color={color} />;
 }
 
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE || "http://10.0.2.2:3001";
+const TABS_CACHE_KEY = "app_config_mobile_tabs_v2";
 
 const TAB_CATALOG = [
-  { key: "index", title: "Home", icon: "home" },
-  { key: "cart", title: "Cart", icon: "cart" },
-  { key: "orders", title: "Order", icon: "file-tray" },
-  { key: "lab", title: "Lab Test", icon: "flask" },
-  { key: "offers", title: "Offers", icon: "pricetags" },
-  { key: "profile", title: "Profile", icon: "person-circle" },
-];
+  { key: "index", title: "Home", icon: "home-outline", iconActive: "home" },
+  { key: "cart", title: "Cart", icon: "cart-outline", iconActive: "cart" },
+  { key: "orders", title: "Orders", icon: "file-tray-outline", iconActive: "file-tray" },
+  { key: "lab", title: "Lab Test", icon: "flask-outline", iconActive: "flask" },
+  { key: "offers", title: "Offers", icon: "pricetag-outline", iconActive: "pricetag" },
+  { key: "profile", title: "Profile", icon: "person-outline", iconActive: "person" },
+] as const;
+
+type TabKey = (typeof TAB_CATALOG)[number]["key"];
 
 export default function TabLayout() {
-  const [tabsConfig, setTabsConfig] = useState<string[] | null>(null);
   const token = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
+  const [tabsConfigCached, setTabsConfigCached] = useState<string[] | null>(null);
 
   useEffect(() => {
     let active = true;
-    fetch(`${API_BASE}/config/mobile-tabs`)
-      .then((res) => res.json())
-      .then((data) => {
+    SecureStore.getItemAsync(TABS_CACHE_KEY)
+      .then((raw) => {
         if (!active) return;
-        if (Array.isArray(data?.tabs) && data.tabs.length > 0) {
-          setTabsConfig(data.tabs.map((t: any) => String(t)));
-        }
+        if (!raw) return;
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) setTabsConfigCached(parsed.map((t: any) => String(t)));
+        } catch {}
       })
       .catch(() => {});
     return () => {
@@ -42,19 +47,44 @@ export default function TabLayout() {
     };
   }, []);
 
+  const tabsConfigQuery = useQuery({
+    queryKey: ["app-config", "mobile-tabs"],
+    queryFn: async () => {
+      const res = await Api.request<any>("/config/mobile-tabs");
+      const tabs = Array.isArray(res?.tabs) ? (res.tabs.map((t: unknown) => String(t)) as string[]) : null;
+      if (tabs && tabs.length) {
+        SecureStore.setItemAsync(TABS_CACHE_KEY, JSON.stringify(tabs)).catch(() => {});
+        setTabsConfigCached(tabs);
+      }
+      return tabs;
+    },
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+  });
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") tabsConfigQuery.refetch().catch(() => {});
+    });
+    return () => sub.remove();
+  }, [tabsConfigQuery]);
+
   const visibleTabs = useMemo(() => {
+    const tabsConfig = tabsConfigQuery.data ?? tabsConfigCached ?? null;
     if (!tabsConfig) return TAB_CATALOG;
-    const allowed = new Set(TAB_CATALOG.map((t) => t.key));
-    const ordered = tabsConfig.filter((t) => allowed.has(t));
-    if (ordered.length === 0) return TAB_CATALOG;
-    return ordered.map((key) => TAB_CATALOG.find((t) => t.key === key)!).filter(Boolean);
-  }, [tabsConfig]);
+    const allowed = new Set<TabKey>(TAB_CATALOG.map((t) => t.key));
+    const ordered = tabsConfig.map((t) => String(t)) as string[];
+    const filtered = ordered.filter((t) => allowed.has(t as TabKey)) as TabKey[];
+    if (filtered.length === 0) return TAB_CATALOG;
+    return filtered.map((key) => TAB_CATALOG.find((t) => t.key === key)!).filter(Boolean);
+  }, [tabsConfigQuery.data, tabsConfigCached]);
 
   const cartQuery = useQuery({
     queryKey: ["cart", token],
     enabled: Boolean(token) && String(user?.role || "").toUpperCase() === "CUSTOMER",
     queryFn: () => Api.request<any>("/cart", { token: token || undefined }),
     staleTime: 15_000,
+    refetchInterval: 25_000,
   });
 
   const cartCount = useMemo(() => {
@@ -78,6 +108,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      key={visibleTabs.map((t) => t.key).join("|")}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
@@ -101,7 +132,10 @@ export default function TabLayout() {
           name={tab.key}
           options={{
             title: tab.title,
-            tabBarIcon: ({ color }) => <TabIcon name={tab.icon} color={color} />,
+            tabBarLabel: tab.title,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon name={focused ? (tab as any).iconActive : tab.icon} color={color} />
+            ),
             ...(tab.key === "cart"
               ? {
                   tabBarBadge: cartCount > 0 ? cartCount : undefined,

@@ -1,16 +1,24 @@
 import { View, Pressable } from "react-native";
-import { Text, Card, PrimaryButton, colors, spacing, radii, Screen } from "@mobile/ui";
+import { Text, Card, PrimaryButton, colors, spacing, radii, Screen, layout } from "@mobile/ui";
 import { useAuthStore } from "@mobile/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface }}>
-      <Screen padded={false} style={{ paddingHorizontal: spacing.xl }}>
+      <Screen
+        padded={false}
+        style={{
+          paddingHorizontal: spacing.xl,
+          paddingBottom: Math.max(spacing.lg, insets.bottom) + layout.tabBarHeight,
+        }}
+      >
         <View
           style={{
             padding: spacing.xl,

@@ -21,6 +21,7 @@ type AuthState = {
   refreshToken: string | null;
   otpPreview: string | null;
   loading: boolean;
+  bootstrapError: string | null;
   bootstrap: () => Promise<void>;
   loginWithOtp: (params: { phone: string; otp: string }) => Promise<void>;
   sendLoginOtp: (phone: string) => Promise<string | null>;
@@ -61,13 +62,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   refreshToken: null,
   otpPreview: null,
   loading: false,
+  bootstrapError: null,
 
   bootstrap: async () => {
     try {
-      set({ loading: true });
+      set({ loading: true, bootstrapError: null });
       const { access, refresh } = await loadTokens();
       if (!access && !refresh) {
-        set({ user: null, accessToken: null, refreshToken: null, loading: false });
+        set({ user: null, accessToken: null, refreshToken: null, loading: false, bootstrapError: null });
         return;
       }
 
@@ -75,7 +77,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (access) {
         try {
           const me = await fetchMe(access);
-          set({ user: me, accessToken: access, refreshToken: refresh || null, loading: false });
+          set({ user: me, accessToken: access, refreshToken: refresh || null, loading: false, bootstrapError: null });
           return;
         } catch (e: any) {
           // Fall back to refresh on 401 when we have a refresh token.
@@ -91,10 +93,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         accessToken: out.access_token,
         refreshToken: out.refresh_token || refresh,
         loading: false,
+        bootstrapError: null,
       });
     } catch (e) {
+      const err: any = e;
+      const status = typeof err?.status === "number" ? err.status : null;
+      const isTimeout = err?.code === "ETIMEDOUT" || err?.name === "AbortError";
+      const isNetwork = isTimeout || status == null;
+
+      // If we can't reach the backend, don't wipe tokens — show a retry state instead.
+      if (isNetwork) {
+        const { access, refresh } = await loadTokens();
+        set({
+          user: null,
+          accessToken: access || null,
+          refreshToken: refresh || null,
+          loading: false,
+          bootstrapError: isTimeout ? "Connection timed out" : "Unable to reach server",
+        });
+        return;
+      }
+
+      // Auth/HTTP failures: clear tokens and reset session.
       await clearTokens();
-      set({ user: null, accessToken: null, refreshToken: null, loading: false });
+      set({ user: null, accessToken: null, refreshToken: null, loading: false, bootstrapError: null });
     }
   },
 
@@ -109,7 +131,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   loginWithOtp: async ({ phone, otp }) => {
-    set({ loading: true });
+    set({ loading: true, bootstrapError: null });
     try {
       const res = await Api.request<{ user: User; access_token: string; refresh_token: string }>(
         "/auth/login-otp",
@@ -122,6 +144,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         refreshToken: res.refresh_token,
         otpPreview: null,
         loading: false,
+        bootstrapError: null,
       });
       queryClient.clear();
     } catch (e) {

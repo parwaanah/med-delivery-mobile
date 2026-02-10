@@ -316,7 +316,7 @@ export default function MedicineDetailScreen() {
             <PrimaryButton title="Add to cart" onPress={onAdd} />
           </View>
           <Pressable
-            onPress={() => router.push("/cart")}
+            onPress={() => router.push("/(tabs)/cart")}
             style={{
               paddingHorizontal: 14,
               height: 48,

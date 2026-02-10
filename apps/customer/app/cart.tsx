@@ -9,6 +9,7 @@ import { formatPrice } from "@mobile/utils";
 import NetInfo from "@react-native-community/netinfo";
 import { NetworkStateCard } from "../components/NetworkStateCard";
 import { track } from "@/lib/analytics";
+import { useQueryClient } from "@tanstack/react-query";
 
 type CartItem = {
   id: string;
@@ -29,6 +30,7 @@ export default function CartScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const toast = useToast();
+  const queryClient = useQueryClient();
   const [items, setItems] = useState<CartItem[]>([]);
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
@@ -64,6 +66,7 @@ export default function CartScreen() {
     try {
       const res = await Api.request<CartResponse>("/cart", { token });
       setItems(res.items || []);
+      queryClient.invalidateQueries({ queryKey: ["cart", token] }).catch(() => {});
       const code = typeof res.couponCode === "string" && res.couponCode.trim().length ? res.couponCode : null;
       setCouponCode(code);
       setCouponInput(code || "");
@@ -97,12 +100,20 @@ export default function CartScreen() {
 
   const updateQty = async (item: CartItem, delta: number) => {
     try {
-      const nextQty = Math.max(1, item.quantity + delta);
-      await Api.request("/cart/update", {
-        method: "POST",
-        token: token || undefined,
-        body: { cartItemId: item.id, quantity: nextQty },
-      });
+      const rawNext = item.quantity + delta;
+      if (rawNext <= 0) {
+        await Api.request("/cart/remove", {
+          method: "POST",
+          token: token || undefined,
+          body: { cartItemId: item.id },
+        });
+      } else {
+        await Api.request("/cart/update", {
+          method: "POST",
+          token: token || undefined,
+          body: { cartItemId: item.id, quantity: rawNext },
+        });
+      }
       await load();
     } catch (e: any) {
       if (e?.status === 401) {
@@ -151,6 +162,7 @@ export default function CartScreen() {
         token,
         body: { code: c },
       });
+      queryClient.invalidateQueries({ queryKey: ["cart", token] }).catch(() => {});
       await load();
       setCouponError(null);
       toast.show(`Applied ${c}`);
@@ -176,6 +188,7 @@ export default function CartScreen() {
     setCouponError(null);
     try {
       await Api.request("/cart/remove-coupon", { method: "POST", token });
+      queryClient.invalidateQueries({ queryKey: ["cart", token] }).catch(() => {});
       setCouponInput("");
       await load();
       setCouponError(null);
