@@ -15,20 +15,21 @@ function TabIcon({ name, color }: { name: any; color: string }) {
 const TABS_CACHE_KEY = "app_config_mobile_tabs_v2";
 
 const TAB_CATALOG = [
-  { key: "index", title: "Home", icon: "home-outline", iconActive: "home" },
-  { key: "cart", title: "Cart", icon: "cart-outline", iconActive: "cart" },
-  { key: "orders", title: "Orders", icon: "file-tray-outline", iconActive: "file-tray" },
-  { key: "lab", title: "Lab Test", icon: "flask-outline", iconActive: "flask" },
-  { key: "offers", title: "Offers", icon: "pricetag-outline", iconActive: "pricetag" },
-  { key: "profile", title: "Profile", icon: "person-outline", iconActive: "person" },
+  { key: "index", title: "Home", icon: "home-outline" },
+  { key: "orders", title: "Orders", icon: "file-tray-outline" },
+  { key: "lab", title: "Lab Test", icon: "flask-outline" },
+  { key: "cart", title: "Cart", icon: "cart-outline" },
+  { key: "offers", title: "Offers", icon: "pricetag-outline" },
+  { key: "profile", title: "Profile", icon: "person-outline" },
 ] as const;
 
 type TabKey = (typeof TAB_CATALOG)[number]["key"];
+type TabConfig = { key: TabKey; title: string; icon: string; enabled: boolean };
 
 export default function TabLayout() {
   const token = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
-  const [tabsConfigCached, setTabsConfigCached] = useState<string[] | null>(null);
+  const [tabsConfigCached, setTabsConfigCached] = useState<TabConfig[] | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -38,7 +39,30 @@ export default function TabLayout() {
         if (!raw) return;
         try {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) setTabsConfigCached(parsed.map((t: any) => String(t)));
+          if (Array.isArray(parsed)) {
+            // Back-compat: cached string[]
+            if (parsed.length && typeof parsed[0] === "string") {
+              const allowed = new Set<TabKey>(TAB_CATALOG.map((t) => t.key));
+              const ordered = Array.from(new Set(parsed.map((t: any) => String(t))))
+                .map((t) => String(t))
+                .filter((t) => allowed.has(t as TabKey)) as TabKey[];
+              const out = ordered
+                .map((k) => TAB_CATALOG.find((t) => t.key === k))
+                .filter(Boolean)
+                .map((t) => ({ key: (t as any).key, title: (t as any).title, icon: (t as any).icon, enabled: true } as TabConfig));
+              if (out.length) setTabsConfigCached(out);
+            } else {
+              const out = parsed
+                .map((t: any) => ({
+                  key: String(t?.key || "").trim(),
+                  title: String(t?.title || "").trim(),
+                  icon: String(t?.icon || "").trim(),
+                  enabled: t?.enabled !== false,
+                }))
+                .filter((t: any) => t.key && t.title && t.icon);
+              if (out.length) setTabsConfigCached(out as TabConfig[]);
+            }
+          }
         } catch {}
       })
       .catch(() => {});
@@ -51,7 +75,24 @@ export default function TabLayout() {
     queryKey: ["app-config", "mobile-tabs"],
     queryFn: async () => {
       const res = await Api.request<any>("/config/mobile-tabs");
-      const tabs = Array.isArray(res?.tabs) ? (res.tabs.map((t: unknown) => String(t)) as string[]) : null;
+      const raw = Array.isArray(res?.tabs) ? res.tabs : null;
+      const tabs: TabConfig[] | null =
+        raw && raw.length && typeof raw[0] === "object"
+          ? (raw
+              .map((t: any) => ({
+                key: String(t?.key || "").trim(),
+                title: String(t?.title || "").trim(),
+                icon: String(t?.icon || "").trim(),
+                enabled: t?.enabled !== false,
+              }))
+              .filter((t: any) => t.key && t.title && t.icon) as any)
+          : raw && raw.length && typeof raw[0] === "string"
+            ? (raw
+                .map((k: any) => TAB_CATALOG.find((t) => t.key === String(k)) || null)
+                .filter(Boolean)
+                .map((t: any) => ({ key: t.key, title: t.title, icon: t.icon, enabled: true })) as any)
+            : null;
+
       if (tabs && tabs.length) {
         SecureStore.setItemAsync(TABS_CACHE_KEY, JSON.stringify(tabs)).catch(() => {});
         setTabsConfigCached(tabs);
@@ -70,13 +111,39 @@ export default function TabLayout() {
   }, [tabsConfigQuery]);
 
   const visibleTabs = useMemo(() => {
-    const tabsConfig = tabsConfigQuery.data ?? tabsConfigCached ?? null;
-    if (!tabsConfig) return TAB_CATALOG;
+    const cfg = tabsConfigQuery.data ?? tabsConfigCached ?? null;
+    if (!cfg) return TAB_CATALOG.map((t) => ({ ...t, enabled: true } as TabConfig));
+
     const allowed = new Set<TabKey>(TAB_CATALOG.map((t) => t.key));
-    const ordered = tabsConfig.map((t) => String(t)) as string[];
-    const filtered = ordered.filter((t) => allowed.has(t as TabKey)) as TabKey[];
-    if (filtered.length === 0) return TAB_CATALOG;
-    return filtered.map((key) => TAB_CATALOG.find((t) => t.key === key)!).filter(Boolean);
+    const seen = new Set<string>();
+
+    const normalized = cfg
+      .map((t: any) => ({
+        key: String(t?.key || "").trim() as TabKey,
+        title: String(t?.title || "").trim(),
+        icon: String(t?.icon || "").trim(),
+        enabled: t?.enabled !== false,
+      }))
+      .filter((t: any) => allowed.has(t.key))
+      .filter((t: any) => {
+        const k = String(t.key);
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .map((t: any) => {
+        const fallback = TAB_CATALOG.find((x) => x.key === t.key)!;
+        return {
+          key: t.key,
+          title: t.title || fallback.title,
+          icon: t.icon || fallback.icon,
+          enabled: t.enabled !== false,
+        } as TabConfig;
+      });
+
+    const enabled = normalized.filter((t: any) => t.enabled !== false);
+    if (enabled.length) return enabled;
+    return TAB_CATALOG.map((t) => ({ ...t, enabled: true } as TabConfig));
   }, [tabsConfigQuery.data, tabsConfigCached]);
 
   const cartQuery = useQuery({
@@ -134,7 +201,7 @@ export default function TabLayout() {
             title: tab.title,
             tabBarLabel: tab.title,
             tabBarIcon: ({ color, focused }) => (
-              <TabIcon name={focused ? (tab as any).iconActive : tab.icon} color={color} />
+              <TabIcon name={tab.icon} color={color} />
             ),
             ...(tab.key === "cart"
               ? {
