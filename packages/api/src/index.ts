@@ -1,8 +1,12 @@
 import { QueryClient } from "@tanstack/react-query";
+import { Platform } from "react-native";
 
 export const queryClient = new QueryClient();
 
-const DEFAULT_BASE = process.env.EXPO_PUBLIC_API_BASE || "http://localhost:3001";
+const FALLBACK_BASE =
+  Platform.OS === "android" ? "http://10.0.2.2:3001" : "http://localhost:3001";
+
+const DEFAULT_BASE = process.env.EXPO_PUBLIC_API_BASE || FALLBACK_BASE;
 
 export type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 

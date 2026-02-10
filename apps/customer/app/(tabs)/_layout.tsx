@@ -12,7 +12,7 @@ function TabIcon({ name, color }: { name: any; color: string }) {
   return <Ionicons name={name} size={24} color={color} />;
 }
 
-const TABS_CACHE_KEY = "app_config_mobile_tabs_v2";
+const TABS_CACHE_KEY = "app_config_mobile_tabs_v3";
 
 const TAB_CATALOG = [
   { key: "index", title: "Home", icon: "home-outline" },
