@@ -104,6 +104,22 @@ export default function TabLayout() {
   });
 
   useEffect(() => {
+    if (!__DEV__) return;
+    const data = tabsConfigQuery.data;
+    const cached = tabsConfigCached;
+    // eslint-disable-next-line no-console
+    console.log("[tabs] apiBase=", Api.baseUrl);
+    // eslint-disable-next-line no-console
+    console.log("[tabs] query status=", tabsConfigQuery.status, "fetchStatus=", (tabsConfigQuery as any).fetchStatus);
+    // eslint-disable-next-line no-console
+    console.log("[tabs] data keys=", Array.isArray(data) ? data.map((t: any) => t?.key) : data);
+    // eslint-disable-next-line no-console
+    console.log("[tabs] cached keys=", Array.isArray(cached) ? cached.map((t: any) => t?.key) : cached);
+    // eslint-disable-next-line no-console
+    console.log("[tabs] error=", (tabsConfigQuery.error as any)?.message, (tabsConfigQuery.error as any)?.status);
+  }, [tabsConfigQuery.status, (tabsConfigQuery as any).fetchStatus, tabsConfigQuery.data, tabsConfigCached, tabsConfigQuery.error]);
+
+  useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "active") tabsConfigQuery.refetch().catch(() => {});
     });
