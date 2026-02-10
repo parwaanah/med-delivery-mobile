@@ -189,6 +189,9 @@ export default function TabLayout() {
     return list.filter((n: any) => String(n?.status || "").toUpperCase() !== "READ" && String(n?.type || "") === "payment.requested").length;
   }, [notificationsQuery.data]);
 
+  const enabledKeys = useMemo(() => new Set(visibleTabs.map((t) => t.key)), [visibleTabs]);
+  const configByKey = useMemo(() => new Map(visibleTabs.map((t) => [t.key, t])), [visibleTabs]);
+
   return (
     <Tabs
       key={visibleTabs.map((t) => t.key).join("|")}
@@ -209,39 +212,49 @@ export default function TabLayout() {
         },
       }}
     >
-      {visibleTabs.map((tab) => (
-        <Tabs.Screen
-          key={tab.key}
-          name={tab.key}
-          options={{
-            title: tab.title,
-            tabBarLabel: tab.title,
-            tabBarIcon: ({ color, focused }) => (
-              <TabIcon name={tab.icon} color={color} />
-            ),
-            ...(tab.key === "cart"
-              ? {
-                  tabBarBadge: cartCount > 0 ? cartCount : undefined,
-                  tabBarBadgeStyle: {
-                    backgroundColor: colors.accent,
-                    color: "#111",
-                    fontWeight: "700",
-                  } as any,
-                }
-              : {}),
-            ...(tab.key === "orders"
-              ? {
-                  tabBarBadge: unreadPaymentRequestedCount > 0 ? "!" : undefined,
-                  tabBarBadgeStyle: {
-                    backgroundColor: colors.accent,
-                    color: "#111",
-                    fontWeight: "800",
-                  } as any,
-                }
-              : {}),
-          }}
-        />
-      ))}
+      {TAB_CATALOG.map((fallback) => {
+        const enabled = enabledKeys.has(fallback.key);
+        const tab = (configByKey.get(fallback.key) as TabConfig | undefined) || ({
+          key: fallback.key,
+          title: fallback.title,
+          icon: fallback.icon,
+          enabled: true,
+        } as TabConfig);
+
+        return (
+          <Tabs.Screen
+            key={fallback.key}
+            name={fallback.key}
+            options={{
+              // Important: hide disabled tabs completely (expo-router will otherwise auto-add them).
+              ...(enabled ? {} : { href: null }),
+              title: tab.title,
+              tabBarLabel: tab.title,
+              tabBarIcon: ({ color }) => <TabIcon name={tab.icon} color={color} />,
+              ...(fallback.key === "cart" && enabled
+                ? {
+                    tabBarBadge: cartCount > 0 ? cartCount : undefined,
+                    tabBarBadgeStyle: {
+                      backgroundColor: colors.accent,
+                      color: "#111",
+                      fontWeight: "700",
+                    } as any,
+                  }
+                : {}),
+              ...(fallback.key === "orders" && enabled
+                ? {
+                    tabBarBadge: unreadPaymentRequestedCount > 0 ? "!" : undefined,
+                    tabBarBadgeStyle: {
+                      backgroundColor: colors.accent,
+                      color: "#111",
+                      fontWeight: "800",
+                    } as any,
+                  }
+                : {}),
+            }}
+          />
+        );
+      })}
     </Tabs>
   );
 }
