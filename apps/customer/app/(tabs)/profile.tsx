@@ -80,16 +80,17 @@ export default function ProfileScreen() {
         <Card style={{ gap: spacing.md }}>
           {[
             { label: "My Orders", icon: "receipt-outline", href: "/(tabs)/orders" },
-            { label: "My Wishlist", icon: "heart-outline" },
+            { label: "My Wishlist", icon: "heart-outline", href: "/wishlist" },
             { label: "My Prescription", icon: "document-text-outline", href: "/prescriptions" },
             { label: "Your Lab Test", icon: "flask-outline", href: "/(tabs)/lab" },
-            { label: "Doctor Consultation", icon: "chatbubbles-outline" },
-            { label: "Payment Methods", icon: "card-outline" },
+            { label: "Doctor Consultation", icon: "chatbubbles-outline", href: "/doctor" },
+            { label: "Payment Methods", icon: "card-outline", href: "/payment-methods" },
             { label: "Your Addresses", icon: "location-outline", href: "/addresses" },
             { label: "Notifications", icon: "notifications-outline", href: "/notifications" },
             { label: "Notification Preferences", icon: "options-outline", href: "/profile/notification-preferences" },
+            { label: "Medical Profile", icon: "medkit-outline", href: "/profile/medical" },
             { label: "Terms & Privacy", icon: "document-outline", href: "/legal" },
-            { label: "Pill Reminder", icon: "alarm-outline" },
+            { label: "Pill Reminder", icon: "alarm-outline", href: "/reminders" },
             { label: "Invite Friends", icon: "gift-outline" },
           ].map((item) => (
             <Pressable
@@ -108,7 +109,8 @@ export default function ProfileScreen() {
           ))}
         </Card>
 
-        <View
+        <Pressable
+          onPress={() => router.push("/help" as any)}
           style={{
             backgroundColor: "#E9F7F1",
             padding: spacing.lg,
@@ -118,7 +120,10 @@ export default function ProfileScreen() {
           }}
         >
           <Text variant="subtitle">Need Help?</Text>
-        </View>
+          <Text variant="body" color={colors.inkMuted} style={{ marginTop: 6 }}>
+            FAQs and support tickets
+          </Text>
+        </Pressable>
 
           <PrimaryButton
             title="Sign out"

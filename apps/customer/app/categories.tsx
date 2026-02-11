@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, Pressable, Platform } from "react-native";
 import { useRouter } from "expo-router";
-import { Text, Card, colors, spacing, radii, ScreenScroll } from "@mobile/ui";
+import { Text, Card, colors, spacing, radii, ScreenScroll, Input } from "@mobile/ui";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { CATEGORIES } from "../constants/categories";
 
@@ -26,6 +26,8 @@ export default function CategoriesScreen() {
 
   const API_BASE = process.env.EXPO_PUBLIC_API_BASE || "http://10.0.2.2:3001";
   const [cfg, setCfg] = useState<Array<{ key?: string; label?: string; icon?: any; enabled?: boolean }> | null>(null);
+  const [query, setQuery] = useState("");
+  const [sortAz, setSortAz] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -79,6 +81,15 @@ export default function CategoriesScreen() {
     }));
   }, [cfg]);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = q
+      ? categories.filter((c) => c.label.toLowerCase().includes(q) || c.q.toLowerCase().includes(q))
+      : categories;
+    if (!sortAz) return list;
+    return [...list].sort((a, b) => a.label.localeCompare(b.label));
+  }, [categories, query, sortAz]);
+
   return (
     <ScreenScroll contentStyle={{ gap: spacing.lg }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -100,8 +111,35 @@ export default function CategoriesScreen() {
         </Pressable>
       </View>
 
+      <Input
+        placeholder="Search categories…"
+        value={query}
+        onChangeText={setQuery}
+      />
+
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <Text variant="caption" color={colors.inkMuted}>
+          {filtered.length} categories
+        </Text>
+        <Pressable
+          onPress={() => setSortAz((v) => !v)}
+          style={{
+            paddingHorizontal: spacing.md,
+            paddingVertical: 8,
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: sortAz ? "#E9F7F1" : "#fff",
+          }}
+        >
+          <Text variant="caption" color={sortAz ? colors.primary : colors.inkMuted}>
+            A–Z
+          </Text>
+        </Pressable>
+      </View>
+
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
-        {categories.map((c) => (
+        {filtered.map((c) => (
           <Pressable
             key={c.label}
             onPress={() => router.push(`/search?q=${encodeURIComponent(c.q)}`)}
