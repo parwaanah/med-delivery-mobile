@@ -10,6 +10,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { NetworkStateCard } from "../components/NetworkStateCard";
 import { track } from "@/lib/analytics";
 import { useQueryClient } from "@tanstack/react-query";
+import { useHideTabBarOnScroll } from "@/lib/useHideTabBarOnScroll";
 
 type CartItem = {
   id: string;
@@ -41,6 +42,7 @@ export default function CartScreen() {
   const [offline, setOffline] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
   const [couponBusy, setCouponBusy] = useState(false);
+  const { onScroll } = useHideTabBarOnScroll();
 
   useEffect(() => {
     const unsub = NetInfo.addEventListener((state) => {
@@ -208,6 +210,8 @@ export default function CartScreen() {
   return (
     <Screen padded={false}>
       <ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.lg, paddingBottom: 140 }}
       >
         <Text variant="titleLarge">Cart</Text>

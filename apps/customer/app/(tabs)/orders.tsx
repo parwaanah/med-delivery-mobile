@@ -9,6 +9,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { NetworkStateCard } from "../../components/NetworkStateCard";
 import { formatPrice } from "@mobile/utils";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHideTabBarOnScroll } from "@/lib/useHideTabBarOnScroll";
 
 const ACTIVE_STATUSES = new Set([
   "CREATED",
@@ -59,6 +60,7 @@ export default function OrdersScreen() {
   const [error, setError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
+  const { onScroll } = useHideTabBarOnScroll();
 
   useEffect(() => {
     const unsub = NetInfo.addEventListener((state) => {
@@ -131,6 +133,8 @@ export default function OrdersScreen() {
   return (
     <Screen padded={false}>
       <FlashList
+        onScroll={onScroll as any}
+        scrollEventThrottle={16}
         data={loading ? (new Array(6).fill(null) as any[]) : rows}
         keyExtractor={(item: any, index) => (item ? `${item.type}-${item.type === "order" ? item.order?.id : item.title}` : `s-${index}`)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

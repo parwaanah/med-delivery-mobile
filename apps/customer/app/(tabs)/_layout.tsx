@@ -7,6 +7,9 @@ import { Api } from "@mobile/api";
 import { useAuthStore } from "@mobile/auth";
 import * as SecureStore from "expo-secure-store";
 import { AppState } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { TabBarVisibilityProvider } from "../../components/TabBarVisibility";
+import { AnimatedTabBar } from "../../components/AnimatedTabBar";
 
 function TabIcon({ name, color }: { name: any; color: string }) {
   return <Ionicons name={name} size={24} color={color} />;
@@ -27,6 +30,7 @@ type TabKey = (typeof TAB_CATALOG)[number]["key"];
 type TabConfig = { key: TabKey; title: string; icon: string; enabled: boolean };
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   const token = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
   const [tabsConfigCached, setTabsConfigCached] = useState<TabConfig[] | null>(null);
@@ -177,69 +181,67 @@ export default function TabLayout() {
     return list.filter((n: any) => String(n?.status || "").toUpperCase() !== "READ" && String(n?.type || "") === "payment.requested").length;
   }, [notificationsQuery.data]);
 
+  const hiddenOffset = layout.tabBarHeight + Math.max(0, insets.bottom) + 12;
+
   return (
-    <Tabs
-      key={visibleTabs.map((t) => t.key).join("|")}
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.inkMuted,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          height: layout.tabBarHeight,
-          paddingBottom: 8,
-          paddingTop: 6,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
-        },
-      }}
-    >
-      {visibleTabs.map((tab) => {
-        const enabled = tab.enabled !== false;
-        return (
-          <Tabs.Screen
-            key={tab.key}
-            name={tab.key}
-            options={{
-              ...(enabled
-                ? {}
-                : {
-                    // expo-router hides routes from linking/history with href:null.
-                    // To also hide the UI tab button, use react-navigation styling.
-                    href: null,
-                    tabBarItemStyle: { display: "none" },
-                  }),
-              title: tab.title,
-              tabBarLabel: tab.title,
-              tabBarIcon: ({ color }) => <TabIcon name={tab.icon} color={color} />,
-              ...(tab.key === "cart" && enabled
-                ? {
-                    tabBarBadge: cartCount > 0 ? cartCount : undefined,
-                    tabBarBadgeStyle: {
-                      backgroundColor: colors.accent,
-                      color: "#111",
-                      fontWeight: "700",
-                    } as any,
-                  }
-                : {}),
-              ...(tab.key === "orders" && enabled
-                ? {
-                    tabBarBadge: unreadPaymentRequestedCount > 0 ? "!" : undefined,
-                    tabBarBadgeStyle: {
-                      backgroundColor: colors.accent,
-                      color: "#111",
-                      fontWeight: "800",
-                    } as any,
-                  }
-                : {}),
-            }}
-          />
-        );
-      })}
-    </Tabs>
+    <TabBarVisibilityProvider hiddenOffset={hiddenOffset}>
+      <Tabs
+        key={visibleTabs.map((t) => t.key).join("|")}
+        tabBar={(props) => <AnimatedTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.inkMuted,
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            height: layout.tabBarHeight,
+            paddingBottom: 8,
+            paddingTop: 6,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: "600",
+          },
+        }}
+      >
+        {visibleTabs.map((tab) => {
+          const enabled = tab.enabled !== false;
+          return (
+            <Tabs.Screen
+              key={tab.key}
+              name={tab.key}
+              options={{
+                ...(enabled ? {} : { href: null, tabBarItemStyle: { display: "none" } }),
+                title: tab.title,
+                tabBarLabel: tab.title,
+                tabBarIcon: ({ color }) => <TabIcon name={tab.icon} color={color} />,
+                ...(tab.key === "cart" && enabled
+                  ? {
+                      tabBarBadge: cartCount > 0 ? cartCount : undefined,
+                      tabBarBadgeStyle: {
+                        backgroundColor: colors.accent,
+                        color: "#111",
+                        fontWeight: "700",
+                      } as any,
+                    }
+                  : {}),
+                ...(tab.key === "orders" && enabled
+                  ? {
+                      tabBarBadge: unreadPaymentRequestedCount > 0 ? "!" : undefined,
+                      tabBarBadgeStyle: {
+                        backgroundColor: colors.accent,
+                        color: "#111",
+                        fontWeight: "800",
+                      } as any,
+                    }
+                  : {}),
+              }}
+            />
+          );
+        })}
+      </Tabs>
+    </TabBarVisibilityProvider>
   );
 }
 

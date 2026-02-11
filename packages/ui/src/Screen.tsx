@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ScrollView, ViewStyle, StyleProp } from "react-native";
+import { View, ScrollView, ViewStyle, StyleProp, ScrollViewProps } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, spacing, layout } from "./theme";
 
@@ -9,7 +9,7 @@ type ScreenProps = {
   padded?: boolean;
 };
 
-type ScreenScrollProps = {
+type ScreenScrollProps = Omit<ScrollViewProps, "contentContainerStyle" | "style" | "children"> & {
   children: React.ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
@@ -43,6 +43,7 @@ export function ScreenScroll({
   style,
   padded = true,
   bottomOffset = 140,
+  ...rest
 }: ScreenScrollProps) {
   const insets = useSafeAreaInsets();
   return (
@@ -60,6 +61,8 @@ export function ScreenScroll({
         contentStyle,
       ]}
       showsVerticalScrollIndicator={false}
+      scrollEventThrottle={16}
+      {...rest}
     >
       {children}
     </ScrollView>

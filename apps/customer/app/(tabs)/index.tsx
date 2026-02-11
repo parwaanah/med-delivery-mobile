@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Api } from "@mobile/api";
 import { track } from "@/lib/analytics";
 import { addRecentSearch, getRecentSearches } from "@/lib/recentSearches";
+import { useHideTabBarOnScroll } from "@/lib/useHideTabBarOnScroll";
 import { CATEGORIES } from "../../constants/categories";
 const bannerBg = require("../../assets/splash/splash-pattern.png");
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE || "http://10.0.2.2:3001";
@@ -40,6 +41,7 @@ export default function HomeScreen() {
   const [heroUrl, setHeroUrl] = useState<string | null>(null);
   const [recent, setRecent] = useState<string[]>([]);
   const [categoriesCfg, setCategoriesCfg] = useState<CategoryItem[] | null>(null);
+  const { onScroll } = useHideTabBarOnScroll();
 
   useEffect(() => {
     let active = true;
@@ -193,7 +195,7 @@ export default function HomeScreen() {
   const snap = itemW + itemGap;
 
   return (
-    <ScreenScroll padded={false} contentStyle={{ gap: spacing.xl }}>
+    <ScreenScroll padded={false} contentStyle={{ gap: spacing.xl }} onScroll={onScroll}>
       <ImageBackground
         source={heroUrl ? { uri: heroUrl } : bannerBg}
         style={{
