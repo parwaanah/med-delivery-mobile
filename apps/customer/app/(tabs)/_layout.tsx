@@ -104,22 +104,6 @@ export default function TabLayout() {
   });
 
   useEffect(() => {
-    if (!__DEV__) return;
-    const data = tabsConfigQuery.data;
-    const cached = tabsConfigCached;
-    // eslint-disable-next-line no-console
-    console.log("[tabs] apiBase=", Api.baseUrl);
-    // eslint-disable-next-line no-console
-    console.log("[tabs] query status=", tabsConfigQuery.status, "fetchStatus=", (tabsConfigQuery as any).fetchStatus);
-    // eslint-disable-next-line no-console
-    console.log("[tabs] data keys=", Array.isArray(data) ? data.map((t: any) => t?.key) : data);
-    // eslint-disable-next-line no-console
-    console.log("[tabs] cached keys=", Array.isArray(cached) ? cached.map((t: any) => t?.key) : cached);
-    // eslint-disable-next-line no-console
-    console.log("[tabs] error=", (tabsConfigQuery.error as any)?.message, (tabsConfigQuery.error as any)?.status);
-  }, [tabsConfigQuery.status, (tabsConfigQuery as any).fetchStatus, tabsConfigQuery.data, tabsConfigCached, tabsConfigQuery.error]);
-
-  useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "active") tabsConfigQuery.refetch().catch(() => {});
     });
@@ -189,9 +173,6 @@ export default function TabLayout() {
     return list.filter((n: any) => String(n?.status || "").toUpperCase() !== "READ" && String(n?.type || "") === "payment.requested").length;
   }, [notificationsQuery.data]);
 
-  const enabledKeys = useMemo(() => new Set(visibleTabs.map((t) => t.key)), [visibleTabs]);
-  const configByKey = useMemo(() => new Map(visibleTabs.map((t) => [t.key, t])), [visibleTabs]);
-
   return (
     <Tabs
       key={visibleTabs.map((t) => t.key).join("|")}
@@ -212,26 +193,16 @@ export default function TabLayout() {
         },
       }}
     >
-      {TAB_CATALOG.map((fallback) => {
-        const enabled = enabledKeys.has(fallback.key);
-        const tab = (configByKey.get(fallback.key) as TabConfig | undefined) || ({
-          key: fallback.key,
-          title: fallback.title,
-          icon: fallback.icon,
-          enabled: true,
-        } as TabConfig);
-
+      {visibleTabs.map((tab) => {
         return (
           <Tabs.Screen
-            key={fallback.key}
-            name={fallback.key}
+            key={tab.key}
+            name={tab.key}
             options={{
-              // Important: hide disabled tabs completely (expo-router will otherwise auto-add them).
-              ...(enabled ? {} : { href: null }),
               title: tab.title,
               tabBarLabel: tab.title,
               tabBarIcon: ({ color }) => <TabIcon name={tab.icon} color={color} />,
-              ...(fallback.key === "cart" && enabled
+              ...(tab.key === "cart"
                 ? {
                     tabBarBadge: cartCount > 0 ? cartCount : undefined,
                     tabBarBadgeStyle: {
@@ -241,7 +212,7 @@ export default function TabLayout() {
                     } as any,
                   }
                 : {}),
-              ...(fallback.key === "orders" && enabled
+              ...(tab.key === "orders"
                 ? {
                     tabBarBadge: unreadPaymentRequestedCount > 0 ? "!" : undefined,
                     tabBarBadgeStyle: {

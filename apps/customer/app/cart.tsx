@@ -66,7 +66,7 @@ export default function CartScreen() {
     try {
       const res = await Api.request<CartResponse>("/cart", { token });
       setItems(res.items || []);
-      queryClient.invalidateQueries({ queryKey: ["cart", token] }).catch(() => {});
+      queryClient.setQueryData(["cart", token], res as any);
       const code = typeof res.couponCode === "string" && res.couponCode.trim().length ? res.couponCode : null;
       setCouponCode(code);
       setCouponInput(code || "");

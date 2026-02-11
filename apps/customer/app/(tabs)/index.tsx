@@ -440,8 +440,8 @@ export default function HomeScreen() {
                      height: 96,
                      borderRadius: 999,
                      backgroundColor: hexToRgba(colors.primary, 0.16),
-                     transform: [{ scale: 1.14 }],
-                     opacity: 0.38,
+                     transform: [{ scale: 1.08 }],
+                     opacity: 0.24,
                    }}
                  />
 
@@ -459,9 +459,9 @@ export default function HomeScreen() {
                        ? {}
                        : {
                            shadowColor: colors.primary,
-                           shadowOpacity: 0.14,
-                           shadowRadius: 9,
-                           shadowOffset: { width: 0, height: 6 },
+                           shadowOpacity: 0.1,
+                           shadowRadius: 7,
+                           shadowOffset: { width: 0, height: 4 },
                          }),
                    }}
                  >
