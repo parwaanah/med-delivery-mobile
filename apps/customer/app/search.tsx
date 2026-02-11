@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { View, Pressable } from "react-native";
+import { View, Pressable, Image } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FlashList } from "@shopify/flash-list";
 import { Input, Text, Card, PrimaryButton, colors, spacing, useToast, Screen, Skeleton } from "@mobile/ui";
@@ -12,7 +12,6 @@ import NetInfo from "@react-native-community/netinfo";
 import { NetworkStateCard } from "../components/NetworkStateCard";
 import { addRecentSearch, clearRecentSearches, getRecentSearches } from "../lib/recentSearches";
 import { track } from "@/lib/analytics";
-import { WikimediaThumb } from "../components/WikimediaThumb";
 
 type Medicine = {
   id: number;
@@ -66,13 +65,11 @@ const ResultRow = memo(
             overflow: "hidden",
           }}
         >
-          <WikimediaThumb
-            query={item.name}
-            size={44}
-            radius={12}
-            uri={item.imageUrl || null}
-            fallbackIcon="medkit-outline"
-          />
+          {item.imageUrl ? (
+            <Image source={{ uri: item.imageUrl }} style={{ width: 44, height: 44 }} resizeMode="cover" />
+          ) : (
+            <Ionicons name="medkit" size={18} color={colors.primary} />
+          )}
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <Text variant="body">{item.name}</Text>

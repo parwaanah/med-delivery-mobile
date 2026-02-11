@@ -10,7 +10,6 @@ import NetInfo from "@react-native-community/netinfo";
 import { NetworkStateCard } from "../../components/NetworkStateCard";
 import { Ionicons } from "@expo/vector-icons";
 import { track } from "@/lib/analytics";
-import { WikimediaThumb } from "../../components/WikimediaThumb";
 
 type Medicine = {
   id: number;
@@ -202,7 +201,7 @@ export default function MedicineDetailScreen() {
                 onError={() => setImageOk(false)}
               />
             ) : (
-              <WikimediaThumb query={medicine.name} size={190} radius={16} uri={null} fallbackIcon="medkit-outline" />
+              <Ionicons name="medkit" size={44} color={colors.primary} />
             )}
           </View>
 
@@ -276,7 +275,21 @@ export default function MedicineDetailScreen() {
               {subs.slice(0, 6).map((s) => (
                 <Pressable key={s.id} onPress={() => onOpenSub(s.id)}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    <WikimediaThumb query={s.name} size={42} radius={12} uri={s.imageUrl || null} fallbackIcon="medkit-outline" />
+                    {s.imageUrl ? (
+                      <Image
+                        source={{ uri: s.imageUrl }}
+                        style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: colors.primarySoft }}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 12,
+                          backgroundColor: colors.primarySoft,
+                        }}
+                      />
+                    )}
                     <View style={{ flex: 1 }}>
                       <Text variant="label">{s.name}</Text>
                       <Text variant="caption" color={colors.inkMuted}>
