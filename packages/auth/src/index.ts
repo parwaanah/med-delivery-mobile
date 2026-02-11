@@ -13,6 +13,8 @@ export type User = {
   email?: string;
   role: string;
   status: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 type AuthState = {

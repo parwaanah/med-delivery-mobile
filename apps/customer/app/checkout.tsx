@@ -13,6 +13,7 @@ import { NetworkStateCard } from "../components/NetworkStateCard";
 import { formatPrice } from "@mobile/utils";
 import { LegalConsentModal } from "../components/LegalConsentModal";
 import { track } from "@/lib/analytics";
+import * as Location from "expo-location";
 
 type Address = {
   id: number;
@@ -69,6 +70,7 @@ export default function CheckoutScreen() {
     null
   );
   const [pendingLegalThenCheckout, setPendingLegalThenCheckout] = useState(false);
+  const [settingDeliveryLocation, setSettingDeliveryLocation] = useState(false);
 
   useEffect(() => {
     const unsub = NetInfo.addEventListener((state) => {
@@ -287,6 +289,48 @@ export default function CheckoutScreen() {
     }
   }, [token, selectedId, paymentMode, toast, router, logout]);
 
+  const ensureDeliveryLocation = useCallback(async (): Promise<boolean> => {
+    if (!token) return true;
+    // If we already have coordinates, skip.
+    if (typeof user?.latitude === "number" && typeof user?.longitude === "number") return true;
+
+    if (offline) {
+      setError("Delivery location not set. Reconnect and try again.");
+      return false;
+    }
+
+    setSettingDeliveryLocation(true);
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (perm.status !== "granted") {
+        setError("Delivery location not set. Please allow location permission.");
+        return false;
+      }
+
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const lat = pos?.coords?.latitude;
+      const lon = pos?.coords?.longitude;
+      if (typeof lat !== "number" || typeof lon !== "number") {
+        setError("Could not read your location. Try again.");
+        return false;
+      }
+
+      // Persist to backend so checkout/order validation passes.
+      await Api.request("/users/me", {
+        method: "PATCH",
+        token,
+        body: { latitude: lat, longitude: lon },
+      });
+
+      return true;
+    } catch (e: any) {
+      setError(e?.message || "Failed to set delivery location");
+      return false;
+    } finally {
+      setSettingDeliveryLocation(false);
+    }
+  }, [offline, token, user?.latitude, user?.longitude]);
+
   const onCheckout = async () => {
     track("begin_checkout", { source: "checkout" }, token).catch(() => {});
     if (!(await ensureLegalAccepted())) {
@@ -299,6 +343,7 @@ export default function CheckoutScreen() {
       setShowDisclaimer(true);
       return;
     }
+    if (!(await ensureDeliveryLocation())) return;
     await actuallyCheckout();
   };
 
@@ -337,6 +382,23 @@ export default function CheckoutScreen() {
             </Pressable>
           </View>
         </View>
+
+        {typeof user?.latitude !== "number" || typeof user?.longitude !== "number" ? (
+          <Card style={{ backgroundColor: "#E9F7F1", borderColor: "#D6F0E6", borderWidth: 1, gap: 8 }}>
+            <Text variant="label">Delivery location not set</Text>
+            <Text variant="caption" color={colors.inkMuted}>
+              Set your live location so delivery and tracking work correctly.
+            </Text>
+            <PrimaryButton
+              title={settingDeliveryLocation ? "Setting..." : "Set delivery location"}
+              variant="secondary"
+              onPress={async () => {
+                await ensureDeliveryLocation();
+              }}
+              disabled={settingDeliveryLocation}
+            />
+          </Card>
+        ) : null}
 
         {initialLoading && !showAdd ? (
           <View style={{ alignItems: "center", justifyContent: "center", paddingVertical: spacing.md }}>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, ScrollView, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { Text, Card, PrimaryButton, Input, colors, spacing, Screen, HeartRateLoader, useToast } from "@mobile/ui";
+import { Text, Card, PrimaryButton, Input, colors, spacing, Screen, HeartRateLoader, useToast, layout } from "@mobile/ui";
 import { Api } from "@mobile/api";
 import { useAuthStore } from "@mobile/auth";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,6 +11,7 @@ import { NetworkStateCard } from "../components/NetworkStateCard";
 import { track } from "@/lib/analytics";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHideTabBarOnScroll } from "@/lib/useHideTabBarOnScroll";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type CartItem = {
   id: string;
@@ -32,6 +33,7 @@ export default function CartScreen() {
   const logout = useAuthStore((s) => s.logout);
   const toast = useToast();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<CartItem[]>([]);
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
@@ -212,7 +214,11 @@ export default function CartScreen() {
       <ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={{ paddingHorizontal: spacing.xl, gap: spacing.lg, paddingBottom: 140 }}
+        contentContainerStyle={{
+          paddingHorizontal: spacing.xl,
+          gap: spacing.lg,
+          paddingBottom: 180 + layout.tabBarHeight + Math.max(spacing.lg, insets.bottom),
+        }}
       >
         <Text variant="titleLarge">Cart</Text>
         {loading ? (
@@ -333,7 +339,7 @@ export default function CartScreen() {
             position: "absolute",
             left: spacing.xl,
             right: spacing.xl,
-            bottom: 16,
+            bottom: Math.max(16, insets.bottom) + layout.tabBarHeight + 8,
           }}
         >
           <Card style={{ padding: spacing.md }}>
