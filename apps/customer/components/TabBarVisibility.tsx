@@ -12,14 +12,15 @@ const Ctx = createContext<TabBarVisibilityApi | null>(null);
 
 export function TabBarVisibilityProvider({ children, hiddenOffset }: { children: React.ReactNode; hiddenOffset: number }) {
   const translateY = useSharedValue(0);
-  const DURATION_MS = 520;
+  const SHOW_MS = 220;
+  const HIDE_MS = 520;
 
   const show = useCallback(() => {
-    translateY.value = withTiming(0, { duration: DURATION_MS, easing: Easing.inOut(Easing.cubic) });
+    translateY.value = withTiming(0, { duration: SHOW_MS, easing: Easing.out(Easing.cubic) });
   }, [translateY]);
 
   const hide = useCallback(() => {
-    translateY.value = withTiming(hiddenOffset, { duration: DURATION_MS, easing: Easing.inOut(Easing.cubic) });
+    translateY.value = withTiming(hiddenOffset, { duration: HIDE_MS, easing: Easing.inOut(Easing.cubic) });
   }, [translateY, hiddenOffset]);
 
   const setHidden = useCallback(
