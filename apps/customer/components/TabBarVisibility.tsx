@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo } from "react";
-import { SharedValue, useSharedValue, withTiming } from "react-native-reanimated";
+import { Easing, SharedValue, useSharedValue, withTiming } from "react-native-reanimated";
 
 type TabBarVisibilityApi = {
   translateY: SharedValue<number>;
@@ -14,11 +14,11 @@ export function TabBarVisibilityProvider({ children, hiddenOffset }: { children:
   const translateY = useSharedValue(0);
 
   const show = useCallback(() => {
-    translateY.value = withTiming(0, { duration: 220 });
+    translateY.value = withTiming(0, { duration: 340, easing: Easing.out(Easing.cubic) });
   }, [translateY]);
 
   const hide = useCallback(() => {
-    translateY.value = withTiming(hiddenOffset, { duration: 220 });
+    translateY.value = withTiming(hiddenOffset, { duration: 340, easing: Easing.out(Easing.cubic) });
   }, [translateY, hiddenOffset]);
 
   const setHidden = useCallback(
