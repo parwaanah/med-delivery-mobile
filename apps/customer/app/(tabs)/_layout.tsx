@@ -204,7 +204,14 @@ export default function TabLayout() {
             key={tab.key}
             name={tab.key}
             options={{
-              ...(enabled ? {} : { href: null, tabBarButton: () => null }),
+              ...(enabled
+                ? {}
+                : {
+                    // expo-router hides routes from linking/history with href:null.
+                    // To also hide the UI tab button, use react-navigation styling.
+                    href: null,
+                    tabBarItemStyle: { display: "none" },
+                  }),
               title: tab.title,
               tabBarLabel: tab.title,
               tabBarIcon: ({ color }) => <TabIcon name={tab.icon} color={color} />,
