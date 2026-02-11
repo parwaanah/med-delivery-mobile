@@ -69,6 +69,15 @@ export default function HomeScreen() {
         }
 
         const iconFor = (raw: any): CategoryItem["icon"] => {
+          // Prefer backend-provided icon (when configured via admin).
+          const icon = raw?.icon;
+          if (icon && typeof icon === "object") {
+            const pack = String((icon as any).pack || "").trim().toLowerCase();
+            const name = String((icon as any).name || "").trim();
+            if ((pack === "ion" || pack === "mci") && name) return { pack: pack as any, name };
+          }
+
+          // Fallback to local mapping.
           const label = String(raw?.label || "").trim().toLowerCase();
           const key = String(raw?.key || "").trim().toLowerCase();
           const match = CATEGORIES.find(

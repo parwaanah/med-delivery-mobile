@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { View, Pressable, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Text, Card, colors, spacing, radii, ScreenScroll } from "@mobile/ui";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { CATEGORIES } from "../constants/categories";
 
 type CategoryItem = {
   label: string;
   q: string;
-  icon: string;
+  icon: { pack: "mci" | "ion"; name: string };
 };
 
 function hexToRgba(hex: string, alpha: number) {
@@ -25,7 +25,7 @@ export default function CategoriesScreen() {
   const router = useRouter();
 
   const API_BASE = process.env.EXPO_PUBLIC_API_BASE || "http://10.0.2.2:3001";
-  const [cfg, setCfg] = useState<Array<{ key?: string; label?: string; enabled?: boolean }> | null>(null);
+  const [cfg, setCfg] = useState<Array<{ key?: string; label?: string; icon?: any; enabled?: boolean }> | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -45,13 +45,20 @@ export default function CategoriesScreen() {
   }, [API_BASE]);
 
   const categories = useMemo<CategoryItem[]>(() => {
-    const iconFor = (raw: any): string => {
+    const iconFor = (raw: any): CategoryItem["icon"] => {
+      const icon = raw?.icon;
+      if (icon && typeof icon === "object") {
+        const pack = String((icon as any).pack || "").trim().toLowerCase();
+        const name = String((icon as any).name || "").trim();
+        if ((pack === "ion" || pack === "mci") && name) return { pack: pack as any, name };
+      }
+
       const label = String(raw?.label || "").trim().toLowerCase();
       const key = String(raw?.key || "").trim().toLowerCase();
       const match = CATEGORIES.find(
         (c) => c.label.toLowerCase() === label || c.q.toLowerCase() === key || c.q.toLowerCase().includes(key)
       );
-      return match?.icon?.name || "apps";
+      return match?.icon ?? { pack: "ion", name: "apps" };
     };
 
     if (cfg && cfg.length) {
@@ -68,7 +75,7 @@ export default function CategoriesScreen() {
     return CATEGORIES.map((c) => ({
       label: c.label,
       q: c.q,
-      icon: c.icon.name,
+      icon: c.icon,
     }));
   }, [cfg]);
 
@@ -153,7 +160,11 @@ export default function CategoriesScreen() {
                       : {}),
                   }}
                 >
-                  <MaterialCommunityIcons name={c.icon as any} size={30} color={colors.primary} />
+                  {c.icon.pack === "ion" ? (
+                    <Ionicons name={c.icon.name as any} size={30} color={colors.primary} />
+                  ) : (
+                    <MaterialCommunityIcons name={c.icon.name as any} size={30} color={colors.primary} />
+                  )}
                 </View>
               </View>
 
