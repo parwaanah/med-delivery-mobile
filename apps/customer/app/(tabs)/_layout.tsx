@@ -141,8 +141,12 @@ export default function TabLayout() {
         } as TabConfig;
       });
 
-    const enabled = normalized.filter((t: any) => t.enabled !== false);
-    if (enabled.length) return enabled;
+    // If config exists, any missing tab is considered disabled (so it won't show).
+    const byKey = new Map<TabKey, TabConfig>(normalized.map((t: any) => [t.key, t]));
+    const full = TAB_CATALOG.map((d) => byKey.get(d.key) || ({ ...d, enabled: false } as TabConfig));
+
+    const enabled = full.filter((t: any) => t.enabled !== false);
+    if (enabled.length) return full;
     return TAB_CATALOG.map((t) => ({ ...t, enabled: true } as TabConfig));
   }, [tabsConfigQuery.data, tabsConfigCached]);
 
@@ -194,15 +198,17 @@ export default function TabLayout() {
       }}
     >
       {visibleTabs.map((tab) => {
+        const enabled = tab.enabled !== false;
         return (
           <Tabs.Screen
             key={tab.key}
             name={tab.key}
             options={{
+              ...(enabled ? {} : { href: null, tabBarButton: () => null }),
               title: tab.title,
               tabBarLabel: tab.title,
               tabBarIcon: ({ color }) => <TabIcon name={tab.icon} color={color} />,
-              ...(tab.key === "cart"
+              ...(tab.key === "cart" && enabled
                 ? {
                     tabBarBadge: cartCount > 0 ? cartCount : undefined,
                     tabBarBadgeStyle: {
@@ -212,7 +218,7 @@ export default function TabLayout() {
                     } as any,
                   }
                 : {}),
-              ...(tab.key === "orders"
+              ...(tab.key === "orders" && enabled
                 ? {
                     tabBarBadge: unreadPaymentRequestedCount > 0 ? "!" : undefined,
                     tabBarBadgeStyle: {
