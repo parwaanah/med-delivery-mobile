@@ -32,17 +32,20 @@ export const colors = {
 };
 
 export const typography = {
+  // Global font scale for the whole mobile app UI.
+  // Keep weights the same; only sizes/line-heights are scaled.
+  scale: 0.92,
   family: {
     regular: 'ProximaNova_400Regular',
     medium: 'ProximaNova_500Medium',
     semibold: 'ProximaNova_600SemiBold',
     bold: 'ProximaNova_700Bold',
   },
-  title: { size: 30, lineHeight: 36, weight: '700' as const },
-  subtitle: { size: 22, lineHeight: 28, weight: '600' as const },
-  body: { size: 16, lineHeight: 24, weight: '400' as const },
-  caption: { size: 13, lineHeight: 18, weight: '400' as const },
-  label: { size: 12, lineHeight: 16, weight: '600' as const },
+  title: { size: Math.round(30 * 0.92), lineHeight: Math.round(36 * 0.92), weight: '700' as const },
+  subtitle: { size: Math.round(22 * 0.92), lineHeight: Math.round(28 * 0.92), weight: '600' as const },
+  body: { size: Math.round(16 * 0.92), lineHeight: Math.round(24 * 0.92), weight: '400' as const },
+  caption: { size: Math.round(13 * 0.92), lineHeight: Math.round(18 * 0.92), weight: '400' as const },
+  label: { size: Math.round(12 * 0.92), lineHeight: Math.round(16 * 0.92), weight: '600' as const },
 };
 
 export const layout = {
